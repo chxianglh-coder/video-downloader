@@ -1,0 +1,21 @@
+# 视频下载平台 - 云部署配置
+# 支持: Railway / Render / Fly.io 等平台
+
+# Python 版本
+python: "3.11"
+
+# 依赖
+dependencies:
+  - pip install -r requirements.txt
+  - apt-get update && apt-get install -y ffmpeg
+
+# 启动命令
+start: python server.py
+
+# 端口
+port: 7788
+
+# 环境变量
+env:
+  FLASK_ENV: production
+  DOWNLOAD_DIR: /data/downloads

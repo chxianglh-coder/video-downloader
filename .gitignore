@@ -1,0 +1,12 @@
+bin/
+downloads/
+__pycache__/
+*.pyc
+server.log
+stderr.log
+server_err.log
+settings.json
+cookies_*.txt
+*.mp4
+*.mp3
+test_*.py

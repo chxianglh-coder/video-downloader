@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>视频下载工具 · B站 / 抖音</title>
+  <style>
+    /* ── 基础变量 ── */
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #222539;
+      --surface3: #2a2d45;
+      --border: #2e3150;
+      --accent: #7c6ef0;
+      --accent2: #5b5bd6;
+      --bili: #fb7299;
+      --douyin: #fe2c55;
+      --success: #22c55e;
+      --warn: #f59e0b;
+      --error: #ef4444;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── 背景装饰 ── */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(124,110,240,.15) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(251,114,153,.1) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── 布局 ── */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    /* ── 头部 ── */
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--bili), var(--accent));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--text), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 6px;
+    }
+    .platform-badges {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 12px;
+    }
+    .badge {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .badge-bili { background: rgba(251,114,153,.15); color: var(--bili); border: 1px solid rgba(251,114,153,.3); }
+    .badge-dy { background: rgba(254,44,85,.15); color: var(--douyin); border: 1px solid rgba(254,44,85,.3); }
+    .badge-yt { background: rgba(255,80,80,.15); color: #ff5050; border: 1px solid rgba(255,80,80,.3); }
+
+    /* ── 卡片 ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 18px;
+    }
+
+    /* ── URL 输入区 ── */
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+    .url-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 15px;
+      padding: 12px 16px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .url-input::placeholder { color: var(--muted); }
+    .url-input:focus { border-color: var(--accent); }
+
+    .btn {
+      padding: 12px 22px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-ghost {
+      background: var(--surface2);
+      color: var(--muted);
+      border: 1.5px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface3); color: var(--text); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+    }
+    .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .btn-danger {
+      background: rgba(239,68,68,.15);
+      color: var(--error);
+      border: 1px solid rgba(239,68,68,.3);
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    .btn-danger:hover { background: rgba(239,68,68,.25); }
+    .btn-success {
+      background: rgba(34,197,94,.15);
+      color: var(--success);
+      border: 1px solid rgba(34,197,94,.3);
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    .btn-success:hover { background: rgba(34,197,94,.25); }
+
+    /* ── 视频信息预览 ── */
+    #videoInfo {
+      display: none;
+      gap: 16px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      align-items: flex-start;
+    }
+    .thumbnail-wrap {
+      position: relative;
+      width: 140px;
+      height: 88px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      flex-shrink: 0;
+      background: var(--surface3);
+    }
+    .thumbnail-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .thumb-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+    }
+    .video-meta { flex: 1; }
+    .video-title {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .meta-item { display: flex; align-items: center; gap: 4px; }
+
+    /* ── 格式选择 ── */
+    .format-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .fmt-btn {
+      flex: 1;
+      min-width: 100px;
+      padding: 14px 10px;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all .2s;
+      text-align: center;
+    }
+    .fmt-btn:hover { border-color: var(--accent); background: var(--surface3); }
+    .fmt-btn.active {
+      border-color: var(--accent);
+      background: rgba(124,110,240,.12);
+    }
+    .fmt-icon { font-size: 22px; margin-bottom: 6px; }
+    .fmt-name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .fmt-desc { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    /* ── 下载按钮区 ── */
+    .action-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    /* ── 进度区 ── */
+    #progressArea {
+      display: none;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .progress-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .progress-stats {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      gap: 12px;
+    }
+    .progress-bar-wrap {
+      background: var(--surface3);
+      border-radius: 20px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      border-radius: 20px;
+      background: linear-gradient(90deg, var(--accent), var(--bili));
+      transition: width .5s ease;
+      width: 0%;
+    }
+    .progress-bar.done { background: linear-gradient(90deg, var(--success), #16a34a); }
+    .progress-bar.error { background: linear-gradient(90deg, var(--error), #b91c1c); }
+
+    /* ── 状态消息 ── */
+    #statusMsg {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      min-height: 20px;
+    }
+    #statusMsg.success { color: var(--success); }
+    #statusMsg.error { color: var(--error); }
+
+    /* ── 下载记录 ── */
+    .file-list { display: flex; flex-direction: column; gap: 10px; }
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      transition: border-color .2s;
+    }
+    .file-item:hover { border-color: var(--accent); }
+    .file-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .file-icon-mp4 { background: rgba(251,114,153,.15); }
+    .file-icon-mp3 { background: rgba(124,110,240,.15); }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text);
+    }
+    .file-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .file-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .empty-hint {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .empty-hint .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: .5; }
+
+    /* ── 小提示 ── */
+    .tip-box {
+      background: rgba(124,110,240,.08);
+      border: 1px solid rgba(124,110,240,.2);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-top: 16px;
+    }
+    .tip-box strong { color: var(--accent); }
+
+    /* ── 加载动画 ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .pulsing { animation: pulse 1.5s ease-in-out infinite; }
+
+    /* ── 响应式 ── */
+    @media (max-width: 600px) {
+      .input-row { flex-direction: column; }
+      #videoInfo { flex-direction: column; }
+      .thumbnail-wrap { width: 100%; height: 160px; }
+      .action-row { flex-direction: column; }
+    }
+
+    /* ── 标签页 ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      flex: 1;
+      padding: 8px 16px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .tab.active {
+      background: var(--surface3);
+      color: var(--text);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <!-- 头部 -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">⬇️</div>
+      <h1>视频下载工具</h1>
+    </div>
+    <p class="subtitle">支持 B站、抖音、YouTube 等平台，本地运行保护隐私</p>
+    <div class="platform-badges">
+      <span class="badge badge-bili">📺 哔哩哔哩</span>
+      <span class="badge badge-dy">🎵 抖音</span>
+      <span class="badge badge-yt">▶️ YouTube</span>
+    </div>
+  </header>
+
+  <!-- 标签页 -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('download')">⬇️ 下载</div>
+    <div class="tab" onclick="switchTab('files')">📁 已下载</div>
+    <div class="tab" onclick="switchTab('settings')">⚙️ 设置</div>
+  </div>
+
+  <!-- 下载面板 -->
+  <div id="tab-download" class="tab-panel active">
+    <div class="card">
+      <div class="card-title">🔗 粘贴视频链接</div>
+
+      <!-- URL 输入 -->
+      <div class="input-row">
+        <input
+          type="text"
+          id="urlInput"
+          class="url-input"
+          placeholder="粘贴 B站/抖音/YouTube 视频链接（支持直接粘贴含链接的文字）..."
+          onpaste="setTimeout(handlePaste,100)"
+          onkeydown="if(event.key==='Enter')fetchInfo()"
+        />
+        <button class="btn btn-ghost" onclick="clearAll()">清除</button>
+        <button class="btn btn-ghost" id="fetchBtn" onclick="fetchInfo()">获取信息</button>
+      </div>
+
+      <!-- 链接识别提示 -->
+      <div id="urlHint" style="display:none;margin-top:8px;font-size:12px;color:var(--accent)">
+        ✅ 已自动识别链接：<span id="urlHintText"></span>
+      </div>
+
+      <!-- 错误提示（独立于 progressArea，始终可见） -->
+      <div id="infoError" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:13px;color:var(--error)"></div>
+
+      <!-- 视频信息预览 -->
+      <div id="videoInfo" style="display:none">
+        <div class="thumbnail-wrap">
+          <img id="thumbnail" src="" alt="" style="display:none" />
+          <div class="thumb-placeholder" id="thumbPlaceholder">🎬</div>
+        </div>
+        <div class="video-meta">
+          <div class="video-title" id="videoTitle">—</div>
+          <div class="meta-row">
+            <span class="meta-item" id="metaUploader"></span>
+            <span class="meta-item" id="metaDuration"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 格式选择 -->
+      <div id="formatSection" style="display:none">
+        <div class="card-title" style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
+          🎛️ 选择输出格式
+        </div>
+        <div class="format-row">
+          <div class="fmt-btn active" data-fmt="mp4" onclick="selectFmt(this)">
+            <div class="fmt-icon">🎬</div>
+            <div class="fmt-name">MP4</div>
+            <div class="fmt-desc">高清视频</div>
+          </div>
+          <div class="fmt-btn" data-fmt="mp3" onclick="selectFmt(this)">
+            <div class="fmt-icon">🎵</div>
+            <div class="fmt-name">MP3</div>
+            <div class="fmt-desc">仅音频 192kbps</div>
+          </div>
+          <div class="fmt-btn" data-fmt="original" onclick="selectFmt(this)">
+            <div class="fmt-icon">⭐</div>
+            <div class="fmt-name">原画</div>
+            <div class="fmt-desc">最高画质</div>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn btn-primary" id="downloadBtn" onclick="startDownload()" style="flex:1">
+            ⬇️ 开始下载
+          </button>
+        </div>
+      </div>
+
+      <!-- 进度区 -->
+      <div id="progressArea">
+        <div class="progress-header">
+          <div class="progress-label" id="progressLabel">准备中...</div>
+          <div class="progress-stats">
+            <span id="progressSpeed"></span>
+            <span id="progressEta"></span>
+            <span id="progressPct">0%</span>
+          </div>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div id="statusMsg"></div>
+      </div>
+
+      <!-- 小提示 -->
+      <div class="tip-box" id="tipBox">
+        💡 <strong>使用提示：</strong>直接粘贴视频页面的网址即可，也支持直接粘贴含链接的抖音分享文字。B站支持 BV/AV 号链接；抖音需要导入 Cookie（见下方按钮）；YouTube 支持完整链接。下载文件保存在本地 <strong>downloads/</strong> 目录中。
+      </div>
+
+      <!-- Cookie 管理入口 -->
+      <div id="cookieArea" style="margin-top:14px;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <div id="cookieStatusDouyin" style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)">
+            <span id="cookieIconDouyin">⚪</span> 抖音 Cookie
+          </div>
+          <div id="cookieStatusBilibili" style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)">
+            <span id="cookieIconBilibili">⚪</span> B站 Cookie
+          </div>
+          <button class="btn btn-ghost" onclick="showCookieGuide()" style="padding:5px 12px;font-size:12px;margin-left:auto">🍪 导入 Cookie</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cookie 导入弹窗 -->
+  <div id="cookieModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;overflow-y:auto;">
+    <div style="max-width:600px;margin:40px auto;padding:20px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <h3 style="font-size:17px;font-weight:700">🍪 导入 Cookie</h3>
+          <button onclick="$('cookieModal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+        </div>
+
+        <div style="background:rgba(124,110,240,.08);border:1px solid rgba(124,110,240,.2);border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;line-height:1.8;color:var(--text)">
+          <strong style="color:var(--accent)">为什么需要 Cookie？</strong><br>
+          抖音/B站 会验证登录状态。Cookie 是你浏览器里的登录凭据，导入后工具就能以你的身份下载视频。<br>
+          <strong style="color:var(--warn)">⚠️ Cookie 只存在本地，不会上传任何地方。</strong>
+        </div>
+
+        <div style="margin-bottom:20px">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">📋 操作步骤</div>
+          <div style="font-size:13px;color:var(--muted);line-height:2">
+            1. 在 Chrome 安装扩展：<a href="https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc" target="_blank" style="color:var(--accent)">Get cookies.txt LOCALLY</a><br>
+            2. 在浏览器中打开并<strong style="color:var(--text)">登录</strong>对应平台（抖音/B站）<br>
+            3. 点击扩展图标 → 选择「Export」→ 保存为 <code style="background:var(--surface3);padding:1px 5px;border-radius:4px">.txt</code> 文件<br>
+            4. 在下方选择平台并上传该文件
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <!-- 抖音 -->
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <span style="font-size:14px;font-weight:600">🎵 抖音 / TikTok</span>
+              <span id="dyStatus" style="font-size:12px;color:var(--muted)">未导入</span>
+            </div>
+            <input type="file" id="cookieFileDouyin" accept=".txt" style="display:none" onchange="uploadCookie('douyin')">
+            <button class="btn btn-ghost" onclick="$('cookieFileDouyin').click()" style="width:100%;font-size:13px">📂 选择 cookies.txt</button>
+          </div>
+          <!-- B站 -->
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <span style="font-size:14px;font-weight:600">📺 哔哩哔哩</span>
+              <span id="blStatus" style="font-size:12px;color:var(--muted)">未导入</span>
+            </div>
+            <input type="file" id="cookieFileBilibili" accept=".txt" style="display:none" onchange="uploadCookie('bilibili')">
+            <button class="btn btn-ghost" onclick="$('cookieFileBilibili').click()" style="width:100%;font-size:13px">📂 选择 cookies.txt</button>
+          </div>
+        </div>
+
+        <div id="cookieMsg" style="margin-top:14px;font-size:13px;min-height:20px;text-align:center"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 文件面板 -->
+  <div id="tab-files" class="tab-panel">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <div class="card-title" style="margin:0">📁 已下载文件</div>
+        <button class="btn btn-ghost" onclick="loadFiles()" style="padding:6px 14px;font-size:13px">🔄 刷新</button>
+      </div>
+      <!-- 当前下载目录提示 -->
+      <div id="currentDirHint" style="font-size:12px;color:var(--muted);margin-bottom:12px;display:none">
+        📂 当前保存位置：<span id="currentDirPath" style="color:var(--accent)"></span>
+      </div>
+      <div class="file-list" id="fileList">
+        <div class="empty-hint">
+          <div class="empty-icon">📭</div>
+          加载中...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 设置面板 -->
+  <div id="tab-settings" class="tab-panel">
+    <div class="card">
+      <div class="card-title">⚙️ 下载设置</div>
+
+      <!-- 下载目录 -->
+      <div style="margin-bottom:24px">
+        <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">
+          📂 下载保存位置
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">
+          设置视频文件的保存目录。可以输入任意本地绝对路径（如 <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px">D:\Downloads\Videos</code>），目录不存在时会自动创建。
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:stretch">
+          <input
+            type="text"
+            id="downloadDirInput"
+            placeholder="例：D:\Downloads\Videos 或 C:\Users\你的名字\Videos"
+            style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s"
+            onfocus="this.style.borderColor='var(--accent)'"
+            onblur="this.style.borderColor='var(--border)'"
+            onkeydown="if(event.key==='Enter')saveDownloadDir()"
+          >
+          <button class="btn btn-primary" onclick="saveDownloadDir()" id="saveDirBtn" style="white-space:nowrap;padding:0 20px">
+            💾 保存
+          </button>
+        </div>
+
+        <!-- 保存结果提示 -->
+        <div id="settingMsg" style="margin-top:10px;font-size:13px;display:none"></div>
+
+        <!-- 当前配置展示 -->
+        <div style="margin-top:14px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">当前保存目录：</div>
+          <div id="currentSettingDir" style="font-size:13px;color:var(--accent);font-family:monospace;word-break:break-all">加载中...</div>
+        </div>
+
+        <!-- 权限回退警告 -->
+        <div id="dirFallbackWarn" style="display:none;margin-top:10px;padding:10px 14px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px">
+          <span style="font-size:13px;color:var(--warn,#f59e0b)">⚠️ 该目录无写入权限（可能受沙箱限制），下载将保存到默认目录：</span>
+          <div id="fallbackDirText" style="font-size:12px;color:var(--muted);font-family:monospace;margin-top:4px;word-break:break-all"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">如需修改，请选择项目工作区内的目录或联系管理员开放目录权限。</div>
+        </div>
+      </div>
+
+      <!-- 分隔线 -->
+      <div style="border-top:1px solid var(--border);margin-bottom:20px"></div>
+
+      <!-- 使用说明 -->
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px">📖 使用说明</div>
+      <div style="font-size:13px;color:var(--muted);line-height:2">
+        <div>• <strong style="color:var(--text)">修改目录后立即生效</strong>，下次下载就会保存到新位置</div>
+        <div>• 已下载的旧文件<strong style="color:var(--text)">不会自动移动</strong>，它们仍在原目录</div>
+        <div>• 「已下载」标签页只显示当前配置目录中的文件</div>
+        <div>• 支持网络路径（如 <code style="background:var(--bg);padding:1px 5px;border-radius:3px">\\\\NAS\Videos</code>），但需确保有写入权限</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── 状态 ──────────────────────────────────────────────
+  let currentFmt = 'mp4';
+  let currentTaskId = null;
+  let sseSource = null;
+
+  // ── 工具函数 ──────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach((t,i) => {
+      t.classList.toggle('active', ['download','files','settings'][i] === name);
+    });
+    document.querySelectorAll('.tab-panel').forEach(p => {
+      p.classList.toggle('active', p.id === `tab-${name}`);
+    });
+    if (name === 'files') loadFiles();
+    if (name === 'settings') loadSettings();
+  }
+
+  function selectFmt(el) {
+    document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    currentFmt = el.dataset.fmt;
+  }
+
+  function setStatus(msg, cls='') {
+    const el = $('statusMsg');
+    el.textContent = msg;
+    el.className = cls;
+  }
+
+  function showInfoError(msg) {
+    const el = $('infoError');
+    if (!msg) {
+      el.style.display = 'none';
+      el.innerHTML = '';
+      return;
+    }
+    if (msg.startsWith('NEED_COOKIE:')) {
+      const text = msg.replace('NEED_COOKIE:', '');
+      el.innerHTML = `❌ ${text} <button class="btn btn-ghost" onclick="showCookieGuide()" style="padding:4px 10px;font-size:12px;margin-left:8px">🍪 导入 Cookie</button>`;
+    } else {
+      el.textContent = msg;
+    }
+    el.style.display = 'block';
+  }
+
+  // 从任意文本中提取 URL（抖音分享文字、微信复制等场景）
+  function extractUrl(text) {
+    const m = text.match(/https?:\/\/[^\s\u4e00-\u9fa5，。！？、]+/);
+    return m ? m[0].replace(/[）\)]+$/, '') : null;
+  }
+
+  function handlePaste() {
+    const raw = $('urlInput').value;
+    const extracted = extractUrl(raw);
+    if (extracted && extracted !== raw.trim()) {
+      $('urlInput').value = extracted;
+      $('urlHintText').textContent = extracted;
+      $('urlHint').style.display = 'block';
+    } else {
+      $('urlHint').style.display = 'none';
+    }
+    if (extracted) fetchInfo();
+  }
+
+  function clearAll() {
+    $('urlInput').value = '';
+    $('videoInfo').style.display = 'none';
+    $('formatSection').style.display = 'none';
+    $('progressArea').style.display = 'none';
+    $('urlHint').style.display = 'none';
+    showInfoError('');
+    setStatus('');
+    if (sseSource) { sseSource.close(); sseSource = null; }
+    currentTaskId = null;
+  }
+
+  // ── 获取视频信息 ──────────────────────────────────────
+  async function fetchInfo() {
+    const url = $('urlInput').value.trim();
+    if (!url) {
+      showInfoError('请先粘贴视频链接');
+      return;
+    }
+
+    const btn = $('fetchBtn');
+    btn.innerHTML = '<span class="spinner"></span>解析中...';
+    btn.disabled = true;
+    $('videoInfo').style.display = 'none';
+    $('formatSection').style.display = 'none';
+    $('progressArea').style.display = 'none';
+    showInfoError('');
+    setStatus('');
+
+    try {
+      const res = await fetch('/api/info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        // 短链提示
+        if (data.error.startsWith('SHORT_LINK_NEED_FULL')) {
+          showInfoError('🔗 抖音短链需要验证码，无法自动解析<br><br>请复制<b>完整的视频链接</b>（形如 <code style="background:var(--bg);padding:2px 6px;border-radius:4px">www.Douyin.com/video/123456789</code>）<br><br>方法：在抖音 App 内点「分享」→「复制链接」，直接粘贴', true);
+          return;
+        }
+        throw new Error(data.error);
+      }
+
+      // 填充信息
+      $('videoTitle').textContent = data.title || '未知标题';
+
+      const thumb = $('thumbnail');
+      const placeholder = $('thumbPlaceholder');
+      if (data.thumbnail) {
+        thumb.src = data.thumbnail;
+        thumb.style.display = 'block';
+        placeholder.style.display = 'none';
+        thumb.onerror = () => { thumb.style.display='none'; placeholder.style.display='flex'; };
+      } else {
+        thumb.style.display = 'none';
+        placeholder.style.display = 'flex';
+      }
+
+      $('metaUploader').textContent = data.uploader ? `👤 ${data.uploader}` : '';
+      $('metaDuration').textContent = data.duration ? `⏱️ ${data.duration}` : '';
+
+      $('videoInfo').style.display = 'flex';
+      $('formatSection').style.display = 'block';
+
+    } catch (err) {
+      showInfoError(`❌ 解析失败：${err.message}`);
+    } finally {
+      btn.innerHTML = '获取信息';
+      btn.disabled = false;
+    }
+  }
+
+  // ── 开始下载 ──────────────────────────────────────────
+  async function startDownload() {
+    const url = $('urlInput').value.trim();
+    if (!url) return;
+
+    const btn = $('downloadBtn');
+    btn.innerHTML = '<span class="spinner"></span>提交任务...';
+    btn.disabled = true;
+
+    if (sseSource) { sseSource.close(); sseSource = null; }
+
+    $('progressArea').style.display = 'block';
+    $('progressLabel').textContent = '提交任务...';
+    $('progressBar').style.width = '0%';
+    $('progressBar').className = 'progress-bar';
+    $('progressPct').textContent = '0%';
+    $('progressSpeed').textContent = '';
+    $('progressEta').textContent = '';
+    setStatus('');
+
+    try {
+      const res = await fetch('/api/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, format: currentFmt })
+      });
+      const { task_id, error } = await res.json();
+      if (error) throw new Error(error);
+
+      currentTaskId = task_id;
+      btn.innerHTML = '<span class="spinner"></span>下载中...';
+      listenProgress(task_id);
+
+    } catch (err) {
+      setStatus(`❌ ${err.message}`, 'error');
+      btn.innerHTML = '⬇️ 开始下载';
+      btn.disabled = false;
+    }
+  }
+
+  // ── SSE 进度监听 ──────────────────────────────────────
+  function listenProgress(taskId) {
+    sseSource = new EventSource(`/api/progress/${taskId}`);
+
+    sseSource.onmessage = (e) => {
+      const d = JSON.parse(e.data);
+      if (d.error) {
+        setStatus(`❌ ${d.error}`, 'error');
+        sseSource.close();
+        resetDownloadBtn();
+        return;
+      }
+
+      const pct = d.progress || 0;
+      $('progressBar').style.width = `${pct}%`;
+      $('progressPct').textContent = `${pct}%`;
+      $('progressSpeed').textContent = d.speed || '';
+      $('progressEta').textContent = d.eta ? `剩余 ${d.eta}` : '';
+
+      const labels = {
+        pending: '⏳ 准备中...',
+        downloading: `⬇️ 下载中... ${d.size ? '/ ' + d.size : ''}`,
+        converting: '⚙️ 转换格式中...',
+        done: '✅ 下载完成！',
+        error: '❌ 下载失败'
+      };
+      $('progressLabel').textContent = labels[d.status] || d.status;
+
+      if (d.status === 'done') {
+        $('progressBar').className = 'progress-bar done';
+        setStatus(`🎉 已保存：${d.filename}（${d.file_size}）`, 'success');
+        sseSource.close();
+        resetDownloadBtn();
+        // 自动刷新文件列表
+        if (document.getElementById('tab-files').classList.contains('active')) {
+          loadFiles();
+        }
+      } else if (d.status === 'error') {
+        $('progressBar').className = 'progress-bar error';
+        setStatus(`❌ ${d.error}`, 'error');
+        sseSource.close();
+        resetDownloadBtn();
+      }
+    };
+
+    sseSource.onerror = () => {
+      // SSE 断开时尝试轮询
+      sseSource.close();
+      pollStatus(taskId);
+    };
+  }
+
+  // ── 轮询兜底 ──────────────────────────────────────────
+  async function pollStatus(taskId, retries=0) {
+    if (retries > 60) return;
+    try {
+      const res = await fetch(`/api/task/${taskId}`);
+      const d = await res.json();
+      $('progressBar').style.width = `${d.progress}%`;
+      $('progressPct').textContent = `${d.progress}%`;
+      if (d.status === 'done' || d.status === 'error') {
+        if (d.status === 'done') {
+          $('progressBar').className = 'progress-bar done';
+          setStatus(`🎉 已保存：${d.filename}（${d.file_size}）`, 'success');
+        } else {
+          $('progressBar').className = 'progress-bar error';
+          setStatus(`❌ ${d.error}`, 'error');
+        }
+        resetDownloadBtn();
+        return;
+      }
+    } catch(e) {}
+    setTimeout(() => pollStatus(taskId, retries+1), 1000);
+  }
+
+  function resetDownloadBtn() {
+    const btn = $('downloadBtn');
+    btn.innerHTML = '⬇️ 开始下载';
+    btn.disabled = false;
+  }
+
+  // ── 文件列表 ──────────────────────────────────────────
+  async function loadFiles() {
+    const list = $('fileList');
+    list.innerHTML = '<div class="empty-hint"><div class="empty-icon pulsing">📂</div>加载中...</div>';
+
+    try {
+      const res = await fetch('/api/files');
+      const data = await res.json();
+      // 兼容新旧格式：新格式 {files:[...], download_dir:"..."}, 旧格式直接是数组
+      const files = Array.isArray(data) ? data : (data.files || []);
+      const dlDir = data.download_dir || '';
+
+      // 更新目录提示
+      if (dlDir) {
+        $('currentDirPath').textContent = dlDir;
+        $('currentDirHint').style.display = 'block';
+      }
+
+      if (!files.length) {
+        list.innerHTML = '<div class="empty-hint"><div class="empty-icon">📭</div>还没有下载记录，去下载一个吧~</div>';
+        return;
+      }
+
+      list.innerHTML = files.map(f => {
+        const isAudio = f.format === 'MP3';
+        const icon = isAudio ? '🎵' : '🎬';
+        const iconClass = isAudio ? 'file-icon-mp3' : 'file-icon-mp4';
+        const displayName = f.title && f.title !== f.filename.replace(/\.[^.]+$/,'')
+          ? f.title
+          : f.filename;
+        return `
+          <div class="file-item" id="fi-${f.filename}">
+            <div class="file-icon ${iconClass}">${icon}</div>
+            <div class="file-info">
+              <div class="file-name" title="${f.full_path || f.filename}">${displayName}</div>
+              <div class="file-meta">${f.format} · ${f.size}</div>
+            </div>
+            <div class="file-actions">
+              <a href="/api/download-file/${encodeURIComponent(f.filename)}" download>
+                <button class="btn btn-success">⬇️ 保存</button>
+              </a>
+              <button class="btn btn-danger" onclick="deleteFile('${f.filename}')">🗑️ 删除</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch(e) {
+      list.innerHTML = `<div class="empty-hint"><div class="empty-icon">⚠️</div>${e.message}</div>`;
+    }
+  }
+
+  async function deleteFile(filename) {
+    if (!confirm(`确定删除 ${filename}？`)) return;
+    const res = await fetch(`/api/delete/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.ok) {
+      const el = document.getElementById(`fi-${filename}`);
+      if (el) el.remove();
+    }
+  }
+
+  // ── 设置管理 ──────────────────────────────────────────
+  async function loadSettings() {
+    try {
+      const res = await fetch('/api/settings');
+      const data = await res.json();
+      const dir = data.download_dir || '';
+      const active = data.download_dir_active || dir;
+      $('downloadDirInput').value = dir;
+      $('currentSettingDir').textContent = active || '（默认）';
+
+      // 显示回退警告
+      const warnEl = $('dirFallbackWarn');
+      if (data.download_dir_warning) {
+        warnEl.style.display = 'block';
+        $('fallbackDirText').textContent = active;
+      } else {
+        warnEl.style.display = 'none';
+      }
+    } catch(e) {
+      $('currentSettingDir').textContent = '加载失败';
+    }
+  }
+
+  async function saveDownloadDir() {
+    const dir = $('downloadDirInput').value.trim();
+    if (!dir) {
+      showSettingMsg('⚠️ 请输入目录路径', 'var(--warn)');
+      return;
+    }
+
+    const btn = $('saveDirBtn');
+    btn.innerHTML = '<span class="spinner"></span>保存中...';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ download_dir: dir }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        const active = data.download_dir_active;
+        $('downloadDirInput').value = data.settings.download_dir;
+        $('currentSettingDir').textContent = active || data.settings.download_dir;
+
+        // 显示回退警告
+        const warnEl = $('dirFallbackWarn');
+        if (data.download_dir_warning) {
+          warnEl.style.display = 'block';
+          $('fallbackDirText').textContent = active;
+          showSettingMsg('⚠️ 路径已保存，但该目录无写入权限，已自动回退到默认目录', 'var(--warn)');
+        } else {
+          warnEl.style.display = 'none';
+          showSettingMsg('✅ 保存成功！下次下载将保存到此目录', 'var(--success)');
+        }
+      } else {
+        showSettingMsg(`❌ ${data.error || '保存失败'}`, 'var(--danger, #e05)');
+      }
+    } catch(e) {
+      showSettingMsg(`❌ 请求失败: ${e.message}`, 'var(--danger, #e05)');
+    } finally {
+      btn.innerHTML = '💾 保存';
+      btn.disabled = false;
+    }
+  }
+
+  function showSettingMsg(msg, color) {
+    const el = $('settingMsg');
+    el.textContent = msg;
+    el.style.color = color;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 4000);
+  }
+
+  // ── 初始化 ─────────────────────────────────────────────
+  loadFiles();
+  checkCookieStatus();
+
+  // ── Cookie 管理 ────────────────────────────────────────
+  function showCookieGuide() {
+    $('cookieModal').style.display = 'block';
+    checkCookieStatus();
+  }
+
+  async function checkCookieStatus() {
+    try {
+      const res = await fetch('/api/cookie-status');
+      const data = await res.json();
+
+      // 更新页面上的 cookie 状态图标
+      $('cookieIconDouyin').textContent = data.douyin ? '🟢' : '⚪';
+      $('cookieIconBilibili').textContent = data.bilibili ? '🟢' : '⚪';
+
+      if ($('dyStatus')) $('dyStatus').textContent = data.douyin ? '✅ 已导入' : '未导入';
+      if ($('blStatus')) $('blStatus').textContent = data.bilibili ? '✅ 已导入' : '未导入';
+    } catch(e) {}
+  }
+
+  async function uploadCookie(platform) {
+    const fileInput = $(`cookieFile${platform.charAt(0).toUpperCase() + platform.slice(1)}`);
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('platform', platform);
+    formData.append('cookie_file', file);
+
+    const msgEl = $('cookieMsg');
+    msgEl.textContent = '上传中...';
+    msgEl.style.color = 'var(--muted)';
+
+    try {
+      const res = await fetch('/api/upload-cookie', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.ok) {
+        msgEl.textContent = `✅ ${platform === 'douyin' ? '抖音' : 'B站'} Cookie 导入成功！`;
+        msgEl.style.color = 'var(--success)';
+        checkCookieStatus();
+        setTimeout(() => { $('cookieModal').style.display = 'none'; }, 1500);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch(e) {
+      msgEl.textContent = `❌ 导入失败：${e.message}`;
+      msgEl.style.color = 'var(--error)';
+    }
+  }
+</script>
+</body>
+</html>
