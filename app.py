@@ -180,6 +180,13 @@ def resolve_short_link(url: str) -> str:
 # ─── 路径配置 ────────────────────────────────────────────────
 BASE_DIR = Path(__file__).parent
 BIN_DIR = BASE_DIR / "bin"
+
+# ffmpeg：优先用项目自带的（Windows），否则用系统安装的（Docker/Linux）
+_ffmpeg_local = BIN_DIR / "ffmpeg.exe"
+if _ffmpeg_local.exists():
+    FFMPEG_PATH = str(_ffmpeg_local)
+else:
+    FFMPEG_PATH = os.environ.get("FFMPEG_LOCATION", "ffmpeg")
 SETTINGS_FILE = BASE_DIR / "settings.json"
 
 FFMPEG_PATH = str(BIN_DIR / "ffmpeg.exe")
@@ -281,7 +288,7 @@ def get_ydl_opts(task_id: str, fmt: str, output_path: str, url: str = ""):
         http_headers["Origin"] = "https://www.bilibili.com"
     common = {
         "outtmpl": output_path,
-        "ffmpeg_location": str(BIN_DIR),
+        "ffmpeg_location": FFMPEG_PATH,
         "noplaylist": True,
         "quiet": True,
         "no_warnings": True,
