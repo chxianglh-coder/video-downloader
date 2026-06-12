@@ -4,8 +4,7 @@ import sys, os, time, subprocess, socket
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
-LOG_FILE = BASE_DIR / "server.log"
-PORT = 7788
+PORT = int(os.environ.get("PORT", 7788))  # Render 等云平台通过 PORT 环境变量指定
 
 def is_port_open(port):
     """检查端口是否已被占用"""
